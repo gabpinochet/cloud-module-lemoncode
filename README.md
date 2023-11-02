@@ -1,116 +1,131 @@
-# 01 Production bundle
+# 03 Github branch
 
-In this example we are going to create a production bundle using vite.
+In this example we are going to create a production server using Github pages.
 
-We will start from `00-boilerplate`.
+We will start from `02-azure-ftp`.
 
 # Steps to build it
 
-- `npm install` to install previous sample packages:
+`npm install` to install previous sample packages:
 
 ```bash
 npm install
 ```
 
-First, we will check the current `vite config`
+Using previous application, we upload it using [Github Pages](https://pages.github.com/). We only need to create a new `Public` repository.
 
-_./vite.config.js_
+> NOTE: In this case we won't use `express server` to serve front app, because Github Pages has its own server.
 
-```javascript
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import path from 'path';
-
-export default defineConfig({
-  envPrefix: 'PUBLIC_',
-  plugins: [
-    react({
-      babel: {
-        plugins: ['@emotion'],
-      },
-    }),
-  ],
-  resolve: {
-    alias: {
-      assets: path.resolve(__dirname, 'src/assets'),
-      common: path.resolve(__dirname, 'src/common'),
-      core: path.resolve(__dirname, 'src/core'),
-      layouts: path.resolve(__dirname, 'src/layouts'),
-      pods: path.resolve(__dirname, 'src/pods'),
-      scenes: path.resolve(__dirname, 'src/scenes'),
-      'common-app': path.resolve(__dirname, 'src/common-app'),
-    },
-  },
-});
-
-```
-
-> [Vite env variables](https://vitejs.dev/guide/env-and-mode.html)
-
-We can split vendor chunks if we want:
-
-_./vite.config.js_
-
-```diff
-- import { defineConfig } from 'vite';
-+ import { defineConfig, splitVendorChunkPlugin } from 'vite';
-import react from '@vitejs/plugin-react';
-import path from 'path';
-
-export default defineConfig({
-  envPrefix: 'PUBLIC_',
-  plugins: [
-    react({
-      babel: {
-        plugins: ['@emotion'],
-      },
-    }),
-+   splitVendorChunkPlugin(),
-  ],
-...
-});
-
-```
-
-Let's add a different env variables for `production`:
-
-_./.env.production_
-
-```env
-PUBLIC_ORGANIZATION=facebook
-
-```
-
-Now, we can add the `build` command:
-
-_./package.json_
-
-```diff
-...
-  "scripts": {
-    "start": "run-p -l type-check:watch start:dev",
-    "start:dev": "vite --port 8080",
-+   "build": "npm run type-check && npm run clean && npm run build:prod",
-+   "build:prod": "vite build",
-    "type-check": "tsc --noEmit",
-    ...
-  },
-```
-
-Run it:
+Upload files:
 
 ```bash
+git init
+git remote add origin git@github.com...
+git add .
+git commit -m "initial commit"
+git push -u origin main
+```
+
+Run build command:
+
+```bash
+npm run build
+```
+
+Create a new branch called `gh-pages`.
+
+Remove all files except `dist` folder. And move `dist` folder's files to root path. We should have on root path:
+
+```
+|--assets/
+|--index.html
+
+```
+
+Upload files:
+
+```bash
+git add .
+git commit -m "upload files"
+git push -u origin gh-pages
+```
+
+Now, we have deployed our website in: `https://<user-name>.github.io/<repository-name>`:
+
+![01-open-gh-pages-url](./readme-resources/01-open-gh-pages-url.png)
+
+> NOTE: We can change branch name on Settings tab > GitHub Pages section
+
+As we see, we have some errors when retrieving files:
+
+_https://<user-name>.github.io/assets/index-a824b72f.js net::ERR_ABORTED 404_
+
+This issue is related with the references to assets in the `index.html` file. We need to change the references to:
+
+```diff
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Cloud Module</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+-   <script type="module" crossorigin src="/assets/index-a824b72f.js"></script>
+-   <link rel="modulepreload" crossorigin href="/assets/vendor-13e230a0.js">
++   <script type="module" crossorigin src="./assets/index-a824b72f.js"></script>
++   <link rel="modulepreload" crossorigin href="./assets/vendor-13e230a0.js">
+  </head>
+  <body>
+    <div id="root"></div>
+
+  </body>
+</html>
+```
+
+> Due to Github Pages uses a subpath for the project, we need to add `./` to the references.
+
+Instead of doing manually, we will change the bunlder config. Checkout to main branch
+
+```bash
+git checkout main
+
+```
+
+Update config:
+
+_./vite.config.js_
+
+```diff
+import { defineConfig, splitVendorChunkPlugin } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
+
+export default defineConfig({
++ base: './',
+  envPrefix: 'PUBLIC_',
+  ...
+```
+
+> [Vite Public base path](https://vitejs.dev/guide/build.html#public-base-path)
+
+Run build command:
+
+```bash
+npm install
+
 npm run build
 
 ```
 
-> Search env variable value in the production bundle.
+Copy `dist` folder to `gh-pages` branch as above.
 
-Let's try to run the production bundle:
+Commit and push:
 
 ```bash
-cd dist
-npx lite-server
+git add .
+git commit -m "upload files with base path"
+git push
 
 ```
 
